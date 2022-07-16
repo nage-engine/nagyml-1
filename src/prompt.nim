@@ -1,9 +1,17 @@
-type
-  Prompt = object
-    prompt: seq[Text]
-    choices: seq[Choice]
+import yaml/serialization
+import results
 
-proc validateChoices(prompt: Prompt, file: string, prompts: Table[string, Table[string, Prompt]]): Result[void, tuple[choice: int, reason: string]] =
+import tables, options, strformat, strutils
+
+import text
+import choice
+
+type
+  Prompt* = object
+    prompt*: seq[Text]
+    choices*: seq[Choice]
+
+proc validateChoices*(prompt: Prompt, file: string, prompts: Table[string, Table[string, Prompt]]): Result[void, tuple[choice: int, reason: string]] =
   for index, choice in prompt.choices:
     if choice.jump.isNone and not choice.ending.isSome:
       return err((index, "Empty jump section in non-ending path"))
@@ -16,7 +24,7 @@ proc validateChoices(prompt: Prompt, file: string, prompts: Table[string, Table[
         return err((index, "Empty response when multiple choices are present"))
   return ok()
 
-proc begin(prompt: Prompt, choices: seq[Choice]): Choice =
+proc begin*(prompt: Prompt, choices: seq[Choice]): Choice =
   echo choices.display() & "\n"
   while true:
     stdout.write("> ")

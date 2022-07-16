@@ -1,3 +1,15 @@
+import yaml/serialization, streams
+import results
+
+import tables, os, options, strformat, strutils, sequtils, sugar
+
+import text
+import path
+import choice
+import prompt
+import player
+import metadata
+
 const PROMPTS_DIR: string = "prompts"
 const GAME_DATA: string = "nage.yml"
 const PLAYER_DATA: string = "data.yml"
@@ -32,7 +44,7 @@ proc loadPlayer(metadata: Metadata): Result[Player, string] =
   else:
     result = loadObject[Player](PLAYER_DATA)
 
-proc loadGame(): Result[Game, string] =
+proc loadGame*(): Result[Game, string] =
   var prompts = initTable[string, Table[string, Prompt]]()
   # Load all prompts
   for file in walkDirRec(PROMPTS_DIR):
@@ -61,7 +73,7 @@ proc save(player: Player, e: bool) =
   if e:
     echo fmt"Saved player data to {getCurrentDir()}/{PLAYER_DATA}."
 
-proc shutdown(game: Game, e: bool) =
+proc shutdown*(game: Game, e: bool) =
   game.player.save(e)
   if e:
     echo "Exiting..."
@@ -85,7 +97,7 @@ proc selectChoice(game: Game, display: var bool): Choice =
     game.shutdown(true)
   return prompt.begin(choices)
 
-proc begin(game: var Game) =
+proc begin*(game: var Game) =
   if not game.player.began:
     echo game.metadata.display()
     game.player.began = true

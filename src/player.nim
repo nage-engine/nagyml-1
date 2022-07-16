@@ -1,11 +1,17 @@
-type
-  Player = object
-    began: bool
-    displayNext: bool
-    path: Path
-    notes: seq[string]
+import yaml/serialization
+import options
 
-proc canDisplay(choice: Choice, player: Player): bool =
+import path
+import choice
+
+type
+  Player* = object
+    began*: bool
+    displayNext*: bool
+    path*: Path
+    notes*: seq[string]
+
+proc canDisplay*(choice: Choice, player: Player): bool =
   if choice.notes.isNone or choice.notes.get.require.isNone:
     return true
   for note in choice.notes.get.require.get:
@@ -13,7 +19,7 @@ proc canDisplay(choice: Choice, player: Player): bool =
       return false
   return true
 
-proc applyNotes(choice: Choice, player: var Player) =
+proc applyNotes*(choice: Choice, player: var Player) =
   if not choice.notes.isNone and not choice.notes.get.apply.isNone:
     for note in choice.notes.get.apply.get:
       if note.take:
@@ -24,7 +30,7 @@ proc applyNotes(choice: Choice, player: var Player) =
         if not player.notes.contains(note.name):
           player.notes.add(note.name)
 
-proc update(path: Path, player: var Player) =
+proc update*(path: Path, player: var Player) =
   if path.file.isSome:
     player.path.file = path.file
   player.path.prompt = path.prompt

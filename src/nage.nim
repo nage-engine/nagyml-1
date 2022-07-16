@@ -1,15 +1,15 @@
-import yaml/serialization, streams
+import yaml/serialization
 import results
 
-import tables, os, options, strformat, strutils, sequtils, sugar
+import tables, options
 
-include text
-include path
-include choice
-include prompt
-include player
-include metadata
-include game
+import text
+import path
+import choice
+import prompt
+import player
+import metadata
+import game
 
 let loaded = loadGame()
 
@@ -17,12 +17,12 @@ if loaded.isErr:
   echo loaded.error
   quit(0)
 
-var game = loaded.get
+var g = loaded.get
 
 proc sigintHandler() {.noconv.} =
   echo "\n"
-  game.shutdown(true)
+  g.shutdown(true)
 
 setControlCHook(sigintHandler)
 
-game.begin()
+g.begin()
