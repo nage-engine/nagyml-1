@@ -1,0 +1,16 @@
+name: The Wandering Warrior
+authors:
+  - acikek
+version: v0.1.0
+entry:
+  file: main
+  prompt: main
+
+background: "As you rest your eyes for what you hope is the final time, you wonder... could it have been different?
+
+You've seen everything, done everything there is to do in this harsh world, and you're a survivor.
+
+However, there is a single hesitation inside you, a loose end long forgotten; it itches away... the next morning, you set off.
+
+
+You arrive at a shop owned by an old friend. He beckons you inside, but he doesn't recognize you."

@@ -1,0 +1,100 @@
+main:
+  prompt:
+  - text: What brings you here?
+  choices:
+  - response: 
+      text: I'm just looking around.
+    jump:
+      prompt: looking_around
+    notes:
+      require:
+      - name: looked_around
+        has: false
+      - name: work_to_do
+        has: false
+      apply:
+      - name: looked_around
+
+  - response:
+      text: I'm just looking around.
+    jump:
+      prompt: long_enough
+    notes:
+      require:
+      - name: looked_around
+      - name: work_to_do
+        has: false
+
+  - response: 
+      text: I have work to do.
+    jump:
+      prompt: work_to_do
+    notes:
+      require:
+      - name: work_to_do
+        has: false
+      apply:
+      - name: work_to_do
+
+  - response:
+      text: Have you faced death before?
+    jump:
+      file: combat
+      prompt: main
+    notes:
+      require:
+      - name: inquiry
+
+  - response:
+      text: I have work to do.
+    notes:
+      require:
+      - name: spared
+
+    ending: "He nods, understanding, and you help him off the floor. He will never forget your gratitude.
+    
+Somehow, deep down, you know that this was the correct decision.
+
+
+THE END"
+
+
+looking_around:
+  prompt:
+  - text: Ah, okay. Let me know if you need anything.
+  choices:
+  - jump:
+      prompt: main
+    display: false
+
+long_enough:
+  prompt:
+  - text: I think you've looked around long enough.
+  choices:
+  - jump:
+      prompt: work_to_do
+    display: false
+    notes:
+      apply:
+      - name: work_to_do
+
+work_to_do:
+  prompt:
+  - text: You've got work? And you came here? Why?
+  - text: I can only think of one thing...
+  - text: He reaches for his axe.
+    mode: action
+  choices:
+  - response:
+      text: Draw your sword
+      mode: action
+    jump:
+      file: combat
+      prompt: main
+  - response:
+      text: No, wait! I need to ask you something!
+    jump:
+      prompt: main
+    notes:
+      apply:
+      - name: inquiry

@@ -1,0 +1,62 @@
+main:
+  prompt:
+  - text: So you want death? Well, death I shall bring!
+  - text: He tries to strike you first, but you dodge.
+    mode: action
+  choices:
+  - response:
+      text: Wait for him to lunge again
+      mode: action
+    jump:
+      prompt: final_choice
+  - response:
+      text: Rush towards him with all your might
+      mode: action
+    jump:
+      prompt: death
+
+final_choice:
+  prompt:
+  - text: He lunges, but you've been waiting. You swiftfully step aside.
+    mode: action
+  - text: He loses his balance and turns around to face you, but you kick him onto the floor.
+    mode: action
+  - text: Agh! Mercy, mercy! Please, I don't want to die!
+  choices:
+  - response:
+      text: Spare the shopkeeper
+      mode: action
+    jump:
+      file: main
+      prompt: main
+    notes:
+      apply:
+      - name: spared
+  - response:
+      text: Let God have mercy on your soul.
+      
+    ending: "You casually exit the shop as the owner lies dead on the floor.
+
+Not wanting to be seen, you creep through the city's alleyways and make your way back home.
+
+
+You wonder, though... was this really what destiny was calling?
+
+
+THE END"
+
+
+death:
+  prompt:
+  - text: Anticipating your next move, he swings.
+    mode: action
+  - text: His axe lodges directly into your thigh, piercing flesh and bone.
+    mode: action
+
+  choices:
+  - ending: "As you bleed out, you wonder... what could you have done differently?
+    
+You groan as you take your last breath. Somewhere, something is beckoning you to try again...
+
+
+THE END"
