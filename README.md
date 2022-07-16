@@ -1,6 +1,6 @@
 # nage
 
-#### **N**ot **A**nother **G**ame **E**ngine
+**N**ot **A**nother **G**ame **E**ngine
 
 Well actually, it *is* a game engine. I just wanted to start with "N" because this is my first project using Nim.
 
