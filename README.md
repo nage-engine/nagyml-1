@@ -46,6 +46,7 @@ Prompts and Choices share a common `Text` object type, which has two fields: `te
 With all that out of the way, we can go over how Prompts and Choices are structured. Prompts have the following fields:
 
 - `prompt`: A list of `Text` objects to display on entering the prompt
+  - This is always optional, but should only be left out in case the game ends here.
 - `choices`: A list of `Choice` objects
 
 And Choices are much more complex, with the following fields:
