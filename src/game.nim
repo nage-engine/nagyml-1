@@ -1,5 +1,6 @@
 import yaml/serialization, streams
 import results
+import noise
 
 import tables, os, options, strformat, strutils, sequtils, sugar
 
@@ -9,40 +10,17 @@ import choice
 import prompt
 import player
 import metadata
+import loading
 
-const PROMPTS_DIR: string = "prompts"
-const GAME_DATA: string = "nage.yml"
-const PLAYER_DATA: string = "data.yml"
+const COMMAND_HELP: string = """
+.help: View this message
+.save: Save the player data
+.quit: Saves and quits the game"""
 
-type
-  Game = object
-    metadata: Metadata
-    player: Player
-    prompts: Table[string, Table[string, Prompt]]
-
-proc loadObject[T](path: string): Result[T, string] =
-  var file = newFileStream(path)
-  if file == nil:
-    return err(fmt"'{path}' doesn't exist!")
-  try:
-    var parsed: T
-    load(file, parsed)
-    result = ok(parsed)
-    file.close
-  except:
-    result = err(fmt"Error while loading '{path}': {getCurrentExceptionMsg()}")
-
-proc loadPlayer(metadata: Metadata): Result[Player, string] =
-  var data = newFileStream(PLAYER_DATA)
-  if data == nil:
-    result = ok(Player(
-      began: false,
-      displayNext: true,
-      path: metadata.entry,
-      notes: @[]
-    ))
-  else:
-    result = loadObject[Player](PLAYER_DATA)
+type Game = object
+  metadata: Metadata
+  player: Player
+  prompts: Table[string, Table[string, Prompt]]
 
 proc loadGame*(): Result[Game, string] =
   var prompts = initTable[string, Table[string, Prompt]]()
@@ -63,16 +41,6 @@ proc loadGame*(): Result[Game, string] =
   let player = ?loadPlayer(metadata)
   result = ok(Game(metadata: metadata, player: player, prompts: prompts))
 
-proc save(player: Player, e: bool) =
-  if e:
-    stdout.write("Saving... ")
-  writeFile(PLAYER_DATA, "")
-  var data = newFileStream(PLAYER_DATA, fmWrite)
-  dump(player, data)
-  data.close()
-  if e:
-    echo fmt"Saved player data to {getCurrentDir()}/{PLAYER_DATA}."
-
 proc shutdown*(game: Game, e: bool) =
   game.player.save(e)
   if e:
@@ -83,7 +51,40 @@ proc getPrompt(game: Game, path: Path): Prompt =
   let file = (if path.file.isNone: game.player.path.file.get else: path.file.get)
   result = game.prompts.getOrDefault(file).getOrDefault(path.prompt)
 
-proc selectChoice(game: Game, display: var bool): Choice =
+proc handleCommand(game: Game, command: string): Result[void, string] =
+  if not command.startsWith("."):
+    return err("Invalid input; must be a number")
+  case command:
+    of ".help": echo "\n" & COMMAND_HELP
+    of ".save": game.player.save(true)
+    of ".quit": game.shutdown(true)
+    else: return err("Invalid command; use '.help' for a list of commands")
+  echo ""
+  return ok()
+
+proc beginPrompt(game: Game, prompt: Prompt, choices: seq[Choice], noise: var Noise): Choice =
+  echo choices.display() & "\n"
+  while true:
+    let ok = noise.readLine()
+    if not ok:
+      echo ""
+      game.shutdown(true)
+    let line = noise.getLine
+    var index: int
+    try:
+      index = parseInt(line)
+    except:
+      let handled = game.handleCommand(line)
+      if handled.isErr:
+        echo handled.error & "\n"
+      continue
+    if index < 1 or index > choices.len:
+      echo "Invalid input; choice out of range\n"
+      continue
+    echo ""
+    return choices[index - 1]
+
+proc selectChoice(game: Game, display: var bool, noise: var Noise): Choice =
   let prompt = game.getPrompt(game.player.path)
   if display:
     echo prompt.prompt.display() & "\n"
@@ -95,14 +96,14 @@ proc selectChoice(game: Game, display: var bool): Choice =
   if choices.len == 0:
     echo "You've run out of options! This shouldn't happen - report this to the game's author(s)!"
     game.shutdown(true)
-  return prompt.begin(choices)
+  return game.beginPrompt(prompt, choices, noise)
 
-proc begin*(game: var Game) =
+proc begin*(game: var Game, noise: var Noise) =
   if not game.player.began:
     echo game.metadata.display()
     game.player.began = true
   while true:
-    let choice = game.selectChoice(game.player.displayNext)
+    let choice = game.selectChoice(game.player.displayNext, noise)
     if choice.ending.isSome:
       echo choice.ending.get
       game.shutdown(false)

@@ -1,15 +1,18 @@
-import yaml/serialization
-import options
+import yaml/serialization, streams
+import results
+
+import os, options, strformat, strutils
 
 import path
 import choice
+import metadata
+import loading
 
-type
-  Player* = object
-    began*: bool
-    displayNext*: bool
-    path*: Path
-    notes*: seq[string]
+type Player* = object
+  began*: bool
+  displayNext*: bool
+  path*: Path
+  notes*: seq[string]
 
 proc canDisplay*(choice: Choice, player: Player): bool =
   if choice.notes.isNone:
@@ -43,3 +46,25 @@ proc update*(path: Path, player: var Player) =
   if path.file.isSome:
     player.path.file = path.file
   player.path.prompt = path.prompt
+
+proc loadPlayer*(metadata: Metadata): Result[Player, string] =
+  var data = newFileStream(PLAYER_DATA)
+  if data == nil:
+    result = ok(Player(
+      began: false,
+      displayNext: true,
+      path: metadata.entry,
+      notes: @[]
+    ))
+  else:
+    result = loadObject[Player](PLAYER_DATA)
+
+proc save*(player: Player, e: bool) =
+  if e:
+    stdout.write("Saving... ")
+  writeFile(PLAYER_DATA, "")
+  var data = newFileStream(PLAYER_DATA, fmWrite)
+  dump(player, data)
+  data.close()
+  if e:
+    echo fmt"Saved player data to {getCurrentDir()}/{PLAYER_DATA}."

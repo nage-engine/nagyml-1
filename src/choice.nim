@@ -1,6 +1,6 @@
 import yaml/serialization
 
-import options, strformat, strutils, sequtils, sugar
+import options, strformat, sequtils, sugar
 
 import text
 import path

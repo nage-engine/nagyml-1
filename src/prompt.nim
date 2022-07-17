@@ -1,15 +1,14 @@
 import yaml/serialization
 import results
 
-import tables, options, strformat, strutils
+import tables, options, strformat
 
 import text
 import choice
 
-type
-  Prompt* = object
-    prompt*: seq[Text]
-    choices*: seq[Choice]
+type Prompt* = object
+  prompt*: seq[Text]
+  choices*: seq[Choice]
 
 proc validateChoices*(prompt: Prompt, file: string, prompts: Table[string, Table[string, Prompt]]): Result[void, tuple[choice: int, reason: string]] =
   for index, choice in prompt.choices:
@@ -24,20 +23,3 @@ proc validateChoices*(prompt: Prompt, file: string, prompts: Table[string, Table
       if prompt.choices.len > 1 and choice.response.isNone:
         return err((index, "Empty response when multiple choices are present"))
   return ok()
-
-proc begin*(prompt: Prompt, choices: seq[Choice]): Choice =
-  echo choices.display() & "\n"
-  while true:
-    stdout.write("> ")
-    var index: int
-    try:
-      let line = stdin.readLine()
-      index = parseInt(line)
-    except:
-      echo "Invalid input; must be a number\n"
-      continue
-    if index < 1 or index > choices.len:
-      echo "Invalid input; choice out of range\n"
-      continue
-    echo ""
-    return choices[index - 1]

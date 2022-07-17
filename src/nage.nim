@@ -1,14 +1,8 @@
-import yaml/serialization
 import results
+import noise
 
-import tables, options
+import options
 
-import text
-import path
-import choice
-import prompt
-import player
-import metadata
 import game
 
 let loaded = loadGame()
@@ -18,11 +12,14 @@ if loaded.isErr:
   quit(0)
 
 var g = loaded.get
+var n = Noise.init()
 
-proc sigintHandler() {.noconv.} =
-  echo "\n"
-  g.shutdown(true)
+let prompt = Styler.init("> ")
+n.setPrompt(prompt)
+#proc sigintHandler() {.noconv.} =
+#  echo "\n"
+#  g.shutdown(true)
 
-setControlCHook(sigintHandler)
+#setControlCHook(sigintHandler)
 
-g.begin()
+g.begin(n)
