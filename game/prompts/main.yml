@@ -7,13 +7,10 @@ main:
     jump:
       prompt: looking_around
     notes:
+      once: looked_around
       require:
-      - name: looked_around
-        has: false
       - name: work_to_do
         has: false
-      apply:
-      - name: looked_around
 
   - response:
       text: I'm just looking around.
@@ -30,11 +27,10 @@ main:
     jump:
       prompt: work_to_do
     notes:
+      once: work_to_do
       require:
-      - name: work_to_do
+      - name: inquiry
         has: false
-      apply:
-      - name: work_to_do
 
   - response:
       text: Have you faced death before?
@@ -42,8 +38,11 @@ main:
       file: combat
       prompt: main
     notes:
+      once: inquiry_finish
       require:
       - name: inquiry
+      - name: spared
+        has: false
 
   - response:
       text: I have work to do.
@@ -96,5 +95,7 @@ work_to_do:
     jump:
       prompt: main
     notes:
+      once: inquiry
       apply:
-      - name: inquiry
+      - name: work_to_do
+        take: true

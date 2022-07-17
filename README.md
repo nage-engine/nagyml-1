@@ -94,6 +94,16 @@ Each choice has an optional `notes` field which is a `Notes` object. Those conta
 - `apply`: A list of `NoteApplication`s, which have the following fields:
   - `name`: The name of the note
   - `take`: Whether to take the note from the player, `false` by default (which means it gives the note)
+- `once`: A note name. Upon using this choice, the player gains the specified note; however, whenever the player is presented with this choice, and they have this note, the choice will be hidden. This makes it a pick-once choice, and is equivalent to:
+
+```yml
+notes:
+  require:
+  - name: thing
+    has: false
+  apply:
+  - name: thing
+```
 
 It's up to you to design the best note approach for your game, but know that you can do some pretty advanced stuff with them!
 

@@ -17,6 +17,7 @@ type
   Notes* = object
     apply* {.defaultVal: none(seq[NoteApplication]).}: Option[seq[NoteApplication]]
     require* {.defaultVal: none(seq[NoteRequirement]).}: Option[seq[NoteRequirement]]
+    once* {.defaultVal: none(string)}: Option[string]
 
   Choice* = object
     response* {.defaultVal: none(Text).}: Option[Text]
