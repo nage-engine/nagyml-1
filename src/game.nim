@@ -87,7 +87,8 @@ proc beginPrompt(game: Game, prompt: Prompt, choices: seq[Choice], noise: var No
 proc selectChoice(game: Game, display: var bool, noise: var Noise): Choice =
   let prompt = game.getPrompt(game.player.path)
   if display:
-    echo prompt.prompt.display() & "\n"
+    if prompt.prompt.isSome:
+      echo prompt.prompt.get.display() & "\n"
   else:
     display = true
   if prompt.choices.len == 1 and prompt.choices[0].response.isNone:

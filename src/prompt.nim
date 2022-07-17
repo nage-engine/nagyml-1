@@ -7,7 +7,7 @@ import text
 import choice
 
 type Prompt* = object
-  prompt*: seq[Text]
+  prompt* {.defaultVal: none(seq[Text]).}: Option[seq[Text]]
   choices*: seq[Choice]
 
 proc validateChoices*(prompt: Prompt, file: string, prompts: Table[string, Table[string, Prompt]]): Result[void, tuple[choice: int, reason: string]] =
