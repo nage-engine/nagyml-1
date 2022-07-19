@@ -1,6 +1,15 @@
+ask_for_name:
+  prompt:
+  - text: What should I call you?
+  choices:
+  - input:
+      variable: name
+    jump:
+      prompt: main
+
 main:
   prompt:
-  - text: What brings you here?
+  - text: What brings you here, <name>?
   choices:
   - response: 
       text: I'm just looking around.
@@ -55,7 +64,7 @@ main:
 Somehow, deep down, you know that this was the correct decision.
 
 
-THE END"
+THE END. <name> is SATISFIED."
 
 
 looking_around:

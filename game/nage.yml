@@ -4,7 +4,7 @@ authors:
 version: v0.1.0
 entry:
   file: main
-  prompt: main
+  prompt: ask_for_name
 
 background: "As you rest your eyes for what you hope is the final time, you wonder... could it have been different?
 

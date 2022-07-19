@@ -1,7 +1,7 @@
 import yaml/serialization, streams
 import results
 
-import os, options, strformat, strutils
+import os, options, strformat, strutils, tables
 
 import path
 import choice
@@ -13,6 +13,7 @@ type Player* = object
   displayNext*: bool
   path*: Path
   notes*: seq[string]
+  variables*: Option[Table[string, string]]
 
 proc canDisplay*(choice: Choice, player: Player): bool =
   if choice.notes.isNone:
@@ -54,7 +55,8 @@ proc loadPlayer*(metadata: Metadata): Result[Player, string] =
       began: false,
       displayNext: true,
       path: metadata.entry,
-      notes: @[]
+      notes: @[],
+      variables: none(Table[string, string])
     ))
   else:
     result = loadObject[Player](PLAYER_DATA)
