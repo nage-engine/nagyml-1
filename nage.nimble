@@ -1,6 +1,6 @@
 # Package
 
-version       = "1.2.0"
+version       = "1.2.1"
 author        = "acikek"
 description   = "Not Another Game Engine"
 license       = "MIT"
