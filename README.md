@@ -59,6 +59,7 @@ And Choices are much more complex, with the following fields:
   - The prompt validator will catch any mistakes you make, so don't worry about getting it right on the first try
 - `display`: Whether to display the next prompt's intro text
 - `notes`: A `Notes` object, controlling whether this prompt should be displayed and how it affects the player's state; covered in the [Notes](#Notes) section
+- `input`: An `Input` object, controlling optional user input for variables; covered in the [Variables](#Variables) section
 - `ending`: All games have to end somewhere! If this field is present, its content will be displayed to the player, and then the game will end (after saving).
 
 Here is an example prompt object (without any notes):
@@ -107,6 +108,51 @@ notes:
 ```
 
 It's up to you to design the best note approach for your game, but know that you can do some pretty advanced stuff with them!
+
+### Variables
+
+Variables are permanent state, like notes, but for **display purposes only**. They take direct user input and store the result on the player data, with the only validation being the result is not empty. They can be interpolated in any display string except a game's background.
+
+To take user input, create a single-choice prompt with an `input` field instead of `response`. An input object has the following fields:
+
+- `text`: An optional string, **not** a text object, that acts as an additional input prompt. Appends a colon `:` automatically
+- `variable`: The name of the variable to store the result in
+
+Here's an example input prompt:
+
+```yml
+ask_for_name:
+  prompt:
+  - text: What should I call you?
+  choices:
+  - input:
+      text: Enter your name
+      variable: name
+    jump:
+      prompt: main
+```
+
+To interpolate variables into text strings, simply wrap the variable name (**case sensitive**) in angle brackets (`< >`).
+
+- If no variables exist on the player, **nage** won't bother modifying the text whatsoever.
+- If variables exist, but an invalid variable name is provided, the engine will fill it in with `UNDEFINED`.
+
+Variables *are* actually variable; you can overwrite a variable's value at any time. Here's what it could look like when all put together, combined with the previous example:
+
+```yml
+main:
+  prompt: 
+  - text: Greetings, <name>. What brings you here?
+  choices:
+  - response:
+      text: Actually, I go by a different name.
+    display: false
+    jump:
+      prompt: ask_for_name
+  - response:
+      text: A fight to the death!
+    jump: ...
+```
 
 ### Extra Info
 
