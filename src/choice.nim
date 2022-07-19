@@ -36,7 +36,7 @@ func isInput(choices: seq[Choice]): bool =
 
 proc display*(choices: seq[Choice], variables: Option[Table[string, string]]): tuple[input: bool, text: Option[string]] =
   if choices.isInput:
-    return (true, choices[0].input.get.text.map(s => s & ":"))
+    return (true, choices[0].input.get.text.map(s => s.parse(variables) & ":"))
   let strings = choices
     .filter(c => c.response.isSome)
     .map(c => c.response.get.display(variables))
