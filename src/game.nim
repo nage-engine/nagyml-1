@@ -13,9 +13,19 @@ import metadata
 import loading
 
 const COMMAND_HELP: string = """
-.help: View this message
-.save: Save the player data
-.quit: Saves and quits the game"""
+.help - View this message
+.save - Save the player data
+.quit - Save and quit the game"""
+
+const COMMAND_HELP_DEBUG: string = COMMAND_HELP & "\n" & """
+.prompt <FILE> <NAME> - Display debug info about a prompt
+.prompts <FILE> - Display info about all prompts in a file
+.files - Display all loaded prompt files
+.notes - Display all applied notes
+.variables - Display all applied variables and their values"""
+
+const DEBUG_COMMANDS: seq[string] = @[".prompt", ".prompts", ".files", ".notes", ".variables"]
+const TABLE_COMMANDS: seq[string] = @[".prompt", ".prompts"]
 
 type Game = object
   metadata: Metadata
@@ -52,11 +62,41 @@ proc getPrompt(game: Game, path: Path): Prompt =
   let file = (if path.file.isNone: game.player.path.file.get else: path.file.get)
   result = game.prompts.getOrDefault(file).getOrDefault(path.prompt)
 
+proc checkTableEntry[T](table: Table[string, T], args: seq[string], index: int, id: string): Result[void, string] =
+  if args.len < index + 1:
+    return err(fmt"Command error: missing {id} name")
+  if not table.contains(args[index]):
+    return err(fmt"Command error: {id} '{args[index]}' does not exist")
+  return ok()
+
+proc displayTableKeys[T](table: Table[string, T], id: string): string =
+  let keys = table.keys.toSeq
+  result = fmt"{keys.len} {id}(s):"
+  result.add("\n" & keys.join(", "))
+
 proc handleCommand(game: Game, command: string): Result[void, string] =
-  case command:
-    of ".help": echo "\n" & COMMAND_HELP
+  let args = command.split(" ")[0..^1]
+  if args[0] in DEBUG_COMMANDS and not game.metadata.debug:
+    return err("Invalid command: debug features are disabled")
+  if args[0] in TABLE_COMMANDS:
+    ?game.prompts.checkTableEntry(args, 1, "file")
+  case args[0]:
+    of ".help": echo "\n" & (if game.metadata.debug: COMMAND_HELP_DEBUG else: COMMAND_HELP)
     of ".save": game.player.save(true)
     of ".quit": game.shutdown()
+    of ".prompt":
+      ?game.prompts.getOrDefault(args[1]).checkTableEntry(args, 2, "prompt")
+      echo "\n" & game.prompts.getOrDefault(args[1]).getOrDefault(args[2]).displayPromptDebug(args[1], args[2], game.prompts, game.player)
+    of ".prompts":
+      echo "\n" & game.prompts.getOrDefault(args[1]).displayTableKeys("prompt")
+    of ".files":
+      echo "\n" & game.prompts.displayTableKeys("file")
+    of ".notes": echo (if game.player.notes.len == 0: "No notes applied" else: game.player.notes.join(", "))
+    of ".variables":
+      if game.player.variables.isNone:
+        echo "No variables applied"
+      else:
+        echo "\n" & game.player.variables.get.pairs().toSeq.map(p => fmt"{p[0]}: {p[1]}").join("\n")
     else: return err("Invalid command; use '.help' for a list of commands")
   echo ""
   return ok()
@@ -76,14 +116,14 @@ proc validateInput(game: Game, line: string, isInt: bool): bool =
     return false
   if not isInt:
     if line.isEmptyOrWhitespace:
-      echo "Invalid input; cannot be blank\n"
+      echo "Invalid input: cannot be blank\n"
       return false
     return true
   var index: int
   try:
     index = parseInt(line)
   except:
-    echo "Invalid input; must be a number\n"
+    echo "Invalid input: must be a number\n"
     return false
   return true
 
@@ -103,7 +143,7 @@ proc beginPrompt(game: Game, prompt: Prompt, choices: seq[Choice], noise: var No
       else:
         let index = parseInt(line)
         if index < 1 or index > choices.len:
-          echo "Invalid input; choice out of range\n"
+          echo "Invalid input: choice out of range\n"
           continue
         echo ""
         return choices[index - 1]
@@ -116,7 +156,7 @@ proc selectChoice(game: Game, display: var bool, noise: var Noise, variables: va
   else:
     display = true
   # If the only choice has no text or variable input, user input will be skipped (redirect prompt)
-  if prompt.choices.len == 1 and prompt.choices[0].response.isNone and prompt.choices[0].input.isNone:
+  if prompt.choices.isRedirect:
     return prompt.choices[0]
   let choices = prompt.choices.filter(c => c.canDisplay(game.player))
   # If there are no valid choices to display, exit the game

@@ -31,10 +31,19 @@ type
     notes* {.defaultVal: none(Notes).}: Option[Notes]
     ending* {.defaultVal: none(string).}: Option[string]
 
-func isInput(choices: seq[Choice]): bool =
+func isInput*(choices: seq[Choice]): bool =
   result = choices.len == 1 and choices[0].input.isSome
 
-proc display*(choices: seq[Choice], variables: Option[Table[string, string]]): tuple[input: bool, text: Option[string]] =
+func isRedirect*(choices: seq[Choice]): bool =
+  result = choices.len == 1 and choices[0].response.isNone and choices[0].input.isNone
+
+func getJumps*(choices: seq[Choice], file: string, prompt: string, external: bool): seq[int] =
+  for index, choice in choices:
+    if choice.jump.isSome:
+      if choice.jump.get.matches(file, prompt, external):
+        result.add(index)
+
+func display*(choices: seq[Choice], variables: Option[Table[string, string]]): tuple[input: bool, text: Option[string]] =
   if choices.isInput:
     return (true, choices[0].input.get.text.map(s => s.parse(variables) & ":"))
   let strings = choices

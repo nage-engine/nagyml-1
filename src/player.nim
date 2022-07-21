@@ -1,10 +1,11 @@
 import yaml/serialization, streams
 import results
 
-import os, options, strformat, strutils, tables
+import os, options, strformat, strutils, sequtils, sugar, tables
 
 import path
 import choice
+import prompt
 import metadata
 import loading
 
@@ -25,6 +26,24 @@ proc canDisplay*(choice: Choice, player: Player): bool =
       if (note.name in player.notes) != note.has:
         return false
   return true
+
+func displayPromptDebug*(prompt: Prompt, file: string, name: string, prompts: Table[string, Table[string, Prompt]], player: Player): string =
+  result.add(fmt"ID: {file}/{name}")
+  result.add("\n" & fmt"Type: {prompt.getType()}")
+  result.add("\n\n" & fmt"{prompt.choices.len} choice(s)")
+  var accessible: seq[int] = @[]
+  for index, choice in prompt.choices:
+    if choice.canDisplay(player):
+      accessible.add(index)
+  let extra = if prompt.choices.len != accessible.len: fmt": {accessible.displayIndices()}" else: ""
+  result.add("\n" & fmt"{accessible.len} of them accessible{extra}")
+  result.add("\n\n")
+  let jumps = prompt.getJumps(file, name, prompts)
+  if jumps.len == 0:
+    result.add("No prompts jump here!")
+  else:
+    result.add("Prompts that jump here:")
+    result.add("\n" & jumps.map(j => fmt"- {j.name}: {j.choices.displayIndices()}").join("\n"))
 
 proc tryApplyNote(note: string, player: var Player) =
   if not player.notes.contains(note):
