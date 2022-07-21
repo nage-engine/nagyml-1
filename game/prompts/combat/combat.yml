@@ -35,15 +35,13 @@ final_choice:
   - response:
       text: Let God have mercy on your soul.
       
-    ending: "You casually exit the shop as the owner lies dead on the floor.
+    ending: |-
+      You casually exit the shop as the owner lies dead on the floor.
+      Not wanting to be seen, you creep through the city's alleyways and make your way back home.
 
-Not wanting to be seen, you creep through the city's alleyways and make your way back home.
+      You wonder, though... was this really what destiny was calling?
 
-
-You wonder, though... was this really what destiny was calling?
-
-
-THE END. <name> is HARROWED."
+      THE END. <name> is HARROWED.
 
 
 death:
@@ -54,9 +52,8 @@ death:
     mode: action
 
   choices:
-  - ending: "As you bleed out, you wonder... what could you have done differently?
-    
-You groan as you take your last breath. Somewhere, something is beckoning you to try again...
+  - ending: |-
+      As you bleed out, you wonder... what could you have done differently?
+      You groan as you take your last breath. Somewhere, something is beckoning you to try again...
 
-
-THE END. <name> is DEAD."
+      THE END. <name> is DEAD.

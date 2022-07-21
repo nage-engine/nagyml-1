@@ -59,12 +59,11 @@ main:
       require:
       - name: spared
 
-    ending: "He nods, understanding, and you help him off the floor. He will never forget your gratitude.
-    
-Somehow, deep down, you know that this was the correct decision.
+    ending: |-
+      He nods, understanding, and you help him off the floor. He will never forget your gratitude.
+      Somehow, deep down, you know that this was the correct decision.
 
-
-THE END. <name> is SATISFIED."
+      THE END. <name> is SATISFIED.
 
 
 looking_around:
