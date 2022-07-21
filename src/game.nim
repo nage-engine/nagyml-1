@@ -41,9 +41,10 @@ proc loadGame*(): Result[Game, string] =
   let player = ?loadPlayer(metadata)
   result = ok(Game(metadata: metadata, player: player, prompts: prompts))
 
-proc shutdown*(game: Game, e: bool) =
-  game.player.save(e)
-  if e:
+proc shutdown*(game: Game, save: bool = true, display: bool = true) =
+  if save:
+    game.player.save(display)
+  if display:
     echo "Exiting..."
   quit(0)
 
@@ -55,7 +56,7 @@ proc handleCommand(game: Game, command: string): Result[void, string] =
   case command:
     of ".help": echo "\n" & COMMAND_HELP
     of ".save": game.player.save(true)
-    of ".quit": game.shutdown(true)
+    of ".quit": game.shutdown()
     else: return err("Invalid command; use '.help' for a list of commands")
   echo ""
   return ok()
@@ -64,7 +65,7 @@ proc takeInput(game: Game, noise: var Noise): string =
   let ok = noise.readLine()
   if not ok:
     echo ""
-    game.shutdown(true)
+    game.shutdown(game.metadata.save)
   result = noise.getLine
 
 proc validateInput(game: Game, line: string, isInt: bool): bool =
@@ -121,7 +122,7 @@ proc selectChoice(game: Game, display: var bool, noise: var Noise, variables: va
   # If there are no valid choices to display, exit the game
   if choices.len == 0:
     echo "You've run out of options! This shouldn't happen - report this to the game's author(s)!"
-    game.shutdown(true)
+    game.shutdown(game.metadata.save)
   return game.beginPrompt(prompt, choices, noise, variables)
 
 proc begin*(game: var Game, noise: var Noise) =
@@ -135,7 +136,7 @@ proc begin*(game: var Game, noise: var Noise) =
     # If it's an ending, stop the game here
     if choice.ending.isSome:
       echo choice.ending.get.parse(game.player.variables)
-      game.shutdown(false)
+      game.shutdown(display=false)
     # Apply any notes and jump to the next prompt
     choice.applyNotes(game.player)
     choice.jump.get.update(game.player)

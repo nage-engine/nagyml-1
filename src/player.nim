@@ -55,18 +55,18 @@ proc loadPlayer*(metadata: Metadata): Result[Player, string] =
       began: false,
       displayNext: true,
       path: metadata.entry,
-      notes: @[],
-      variables: none(Table[string, string])
+      notes: metadata.notes.get(@[]),
+      variables: metadata.variables
     ))
   else:
     result = loadObject[Player](PLAYER_DATA)
 
-proc save*(player: Player, e: bool) =
-  if e:
+proc save*(player: Player, display: bool) =
+  if display:
     stdout.write("Saving... ")
   writeFile(PLAYER_DATA, "")
   var data = newFileStream(PLAYER_DATA, fmWrite)
   dump(player, data)
   data.close()
-  if e:
+  if display:
     echo fmt"Saved player data to {getCurrentDir()}/{PLAYER_DATA}."

@@ -1,5 +1,5 @@
 import yaml/serialization
-import options, strformat, strutils
+import options, strformat, strutils, tables
 
 import path
 
@@ -9,6 +9,10 @@ type Metadata* = object
   version*: string
   background* {.defaultVal: none(string).}: Option[string]
   entry*: Path
+  notes* {.defaultVal: none(seq[string]).}: Option[seq[string]]
+  variables* {.defaultVal: none(Table[string, string]).}: Option[Table[string, string]]
+  save* {.defaultVal: true.}: bool
+  debug* {.defaultVal: false.}: bool
 
 proc display*(metadata: Metadata): string =
   let authors = metadata.authors.join(", ")
