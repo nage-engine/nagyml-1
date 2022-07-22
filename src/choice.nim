@@ -28,6 +28,7 @@ type
     input* {.defaultVal: none(Input).}: Option[Input]
     jump* {.defaultVal: none(Path).}: Option[Path]
     display* {.defaultVal: true.}: bool
+    lock* {.defaultVal: false.}: bool
     notes* {.defaultVal: none(Notes).}: Option[Notes]
     variables* {.defaultVal: none(Table[string, string]).}: Option[Table[string, string]]
     ending* {.defaultVal: none(string).}: Option[string]

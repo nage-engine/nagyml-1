@@ -9,12 +9,44 @@ import prompt
 import metadata
 import loading
 
-type Player* = object
-  began*: bool
-  displayNext*: bool
-  path*: Path
-  notes*: seq[string]
-  variables*: Option[Table[string, string]]
+type 
+  VariableEntry* = object
+    value*: string
+    previous*: Option[string]
+
+  HistoryEntry* = object
+    display*: bool
+    path*: Path
+    locked*: bool
+    notes*: Option[seq[NoteApplication]]
+    variables*: Option[Table[string, VariableEntry]]
+
+  Player* = object
+    began*: bool
+    notes*: seq[string]
+    variables*: Option[Table[string, string]]
+    history*: seq[HistoryEntry]
+
+proc loadPlayer*(metadata: Metadata): Result[Player, string] =
+  var data = newFileStream(PLAYER_DATA)
+  if data == nil:
+    let entry = HistoryEntry(
+      display: true,
+      path: metadata.entry,
+      locked: false,
+      notes: none(seq[NoteApplication]),
+      variables: none(Table[string, VariableEntry])
+    )
+    result = ok(Player(
+      began: false,
+      notes: metadata.notes.get(@[]),
+      variables: metadata.variables,
+      history: @[entry]
+    ))
+  else:
+    result = loadObject[Player](PLAYER_DATA)
+    if result.isOk and result.get.history.len == 0:
+      return err("history cannot be empty")
 
 proc canDisplay*(choice: Choice, player: Player): bool =
   if choice.notes.isNone:
@@ -62,23 +94,32 @@ proc applyNotes*(choice: Choice, player: var Player) =
         else:
           note.name.tryApplyNote(player)
 
-proc update*(path: Path, player: var Player) =
-  if path.file.isSome:
-    player.path.file = path.file
-  player.path.prompt = path.prompt
-
-proc loadPlayer*(metadata: Metadata): Result[Player, string] =
-  var data = newFileStream(PLAYER_DATA)
-  if data == nil:
-    result = ok(Player(
-      began: false,
-      displayNext: true,
-      path: metadata.entry,
-      notes: metadata.notes.get(@[]),
-      variables: metadata.variables
-    ))
-  else:
-    result = loadObject[Player](PLAYER_DATA)
+proc appendHistory*(choice: Choice, line: Option[string], size: Option[int], player: var Player) =
+  let last = player.history[^1]
+  let newPath = Path(
+    file: some(choice.jump.get.file.get(last.path.file.get)), 
+    prompt: choice.jump.get.prompt
+  )
+  var variables = choice.variables.get(initTable[string, string]())
+  if line.isSome:
+    variables[choice.input.get.variable] = line.get
+  var variableEntries = initTable[string, VariableEntry]()
+  for key, value in variables:
+    let previous = if player.variables.isSome and player.variables.get.contains(key): 
+      some(player.variables.get.getOrDefault(key)) 
+    else: 
+      none(string)
+    variableEntries[key] = VariableEntry(previous: previous, value: value)
+  let entry = HistoryEntry(
+    display: choice.display, 
+    path: newPath,
+    locked: choice.lock,
+    notes: if choice.notes.isSome: choice.notes.get.apply else: none(seq[NoteApplication]),
+    variables: if variableEntries.len > 0: some(variableEntries) else: none(Table[string, VariableEntry])
+  )
+  player.history.add(entry)
+  if size.isSome and player.history.len > size.get:
+    player.history.delete(0)
 
 proc save*(player: Player, display: bool) =
   if display:

@@ -46,6 +46,7 @@ main:
     jump:
       file: combat
       prompt: main
+    lock: true
     notes:
       once: inquiry_finish
       require:
@@ -98,6 +99,7 @@ work_to_do:
     jump:
       file: combat
       prompt: main
+    lock: true
   - response:
       text: No, wait! I need to ask you something!
     jump:
