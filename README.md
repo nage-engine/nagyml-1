@@ -15,8 +15,12 @@ A game's entrypoint is `nage.yml` in the working directory. It uses a metadata f
 - `name`: The name of the game
 - `authors`: A list of author(s) for the game to credit
 - `version`: The game's version; doesn't follow any specific format, but SemVer is always good
-- `background`: An optional introductory text that the game will display on first launch.
+- `background`: An optional introductory text that the game will display on first launch
 - `entry`: a `Path` object that controls the initial prompt container. A path has a `prompt` field and an optional (but required here) `file` field, but we'll talk more about that later.
+- `notes`: Optional list of notes to apply on startup; covered later
+- `variables`: Optional map of variables to apply on startup; again covered later
+- `save`: Whether to automatically save the game on quit. This is always overriden by the `.quit` command. `true` by default
+- `debug`: Whether to enable debug commands; defaults to `false`, leave it as that in the finished product
 
 Example:
 
@@ -59,7 +63,8 @@ And Choices are much more complex, with the following fields:
   - The prompt validator will catch any mistakes you make, so don't worry about getting it right on the first try
 - `display`: Whether to display the next prompt's intro text
 - `notes`: A `Notes` object, controlling whether this prompt should be displayed and how it affects the player's state; covered in the [Notes](#Notes) section
-- `input`: An `Input` object, controlling optional user input for variables; covered in the [Variables](#Variables) section
+- `variables`: A table of to apply to the player's variables; covered in the [Variables](#Variables) section
+- `input`: An `Input` object, controlling optional user input for variables
 - `ending`: All games have to end somewhere! If this field is present, its content will be displayed to the player, and then the game will end (after saving).
 
 Here is an example prompt object (without any notes):
@@ -82,6 +87,7 @@ main:
   - response:
       text: Run away due to social anxiety
       mode: action
+    ending: Well, that's that.
 ```
 
 ### Notes
@@ -111,7 +117,9 @@ It's up to you to design the best note approach for your game, but know that you
 
 ### Variables
 
-Variables are permanent state, like notes, but for **display purposes only**. They take direct user input and store the result on the player data, with the only validation being the result is not empty. They can be interpolated in any display string except a game's background.
+Variables are permanent state, like notes, but for **display purposes only**. They can be interpolated in any display string except a game's background.
+
+Variables can take direct user input and store the result on the player data, with the only validation being the result is not empty. You can also apply them normally via choices or on startup in the metadata.
 
 To take user input, create a single-choice prompt with an `input` field instead of `response`. An input object has the following fields:
 
@@ -159,3 +167,9 @@ main:
 - Player data is stored in a `data.yml` file which is created after you first quit the game. Players shouldn't touch this, but they can if they really want to; the file is just more accessible than conventional games would allow. Players *especially* shouldn't be *encouraged* to modify the state in order to progress, unless your game is super meta or something.
 - If a player runs into a situation where no choices are available, that's a bug, and you need to fix it. The game will shut down with a message telling the player to contact the author(s).
 - A comprehensive example of a game is located in the aptly-named `game` directory, [found here](https://github.com/acikek/nage/game)! I'm not lying, it's all YAML!
+
+## Commands
+
+When playing a game, the user has the option to run **commands**, prefixed with a `.` character. They are especially useful in a debug environment, when far more commands are available. This is why you should turn off `debug` in the finished game; you don't want players to be able to see the internal workings of it.
+
+To view all available commands, just run `.help`.
