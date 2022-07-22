@@ -127,9 +127,9 @@ proc validateInput(game: Game, line: string, isInt: bool): bool =
     return false
   return true
 
-proc beginPrompt(game: Game, prompt: Prompt, choices: seq[Choice], noise: var Noise, variables: var Option[Table[string, string]]): Choice =
+proc beginPrompt(game: Game, prompt: Prompt, choices: seq[Choice], noise: var Noise): tuple[choice: Choice, line: Option[string]] =
   # Controls the user input loop, even if it's not to pick a choice
-  let display = choices.display(variables)
+  let display = choices.display(game.player.variables)
   if display.text.isSome:
     echo display.text.get & "\n"
   while true:
@@ -137,33 +137,32 @@ proc beginPrompt(game: Game, prompt: Prompt, choices: seq[Choice], noise: var No
     if game.validateInput(line, not display.input):
       if display.input:
         let choice = choices[0]
-        choice.applyVariable(variables, line)
         echo ""
-        return choice
+        return (choice, some(line))
       else:
         let index = parseInt(line)
         if index < 1 or index > choices.len:
           echo "Invalid input: choice out of range\n"
           continue
         echo ""
-        return choices[index - 1]
+        return (choices[index - 1], none(string))
 
-proc selectChoice(game: Game, display: var bool, noise: var Noise, variables: var Option[Table[string, string]]): Choice =
+proc selectChoice(game: Game, display: var bool, noise: var Noise): tuple[choice: Choice, line: Option[string]] =
   let prompt = game.getPrompt(game.player.path)
   if display:
     if prompt.prompt.isSome:
-      echo prompt.prompt.get.display(variables) & "\n"
+      echo prompt.prompt.get.display(game.player.variables) & "\n"
   else:
     display = true
   # If the only choice has no text or variable input, user input will be skipped (redirect prompt)
   if prompt.choices.isRedirect:
-    return prompt.choices[0]
+    return (prompt.choices[0], none(string))
   let choices = prompt.choices.filter(c => c.canDisplay(game.player))
   # If there are no valid choices to display, exit the game
   if choices.len == 0:
     echo "You've run out of options! This shouldn't happen - report this to the game's author(s)!"
     game.shutdown(game.metadata.save)
-  return game.beginPrompt(prompt, choices, noise, variables)
+  return game.beginPrompt(prompt, choices, noise)
 
 proc begin*(game: var Game, noise: var Noise) =
   if not game.player.began:
@@ -172,13 +171,14 @@ proc begin*(game: var Game, noise: var Noise) =
   # Main game loop
   while true:
     # Select a choice from the current prompt
-    let choice = game.selectChoice(game.player.displayNext, noise, game.player.variables)
+    let (choice, line) = game.selectChoice(game.player.displayNext, noise)
     # If it's an ending, stop the game here
     if choice.ending.isSome:
       echo choice.ending.get.parse(game.player.variables)
       game.shutdown(display=false)
-    # Apply any notes and jump to the next prompt
+    # Apply any data and jump to the next prompt
     choice.applyNotes(game.player)
+    choice.applyVariables(game.player.variables, line)
     choice.jump.get.update(game.player)
     if not choice.display:
       game.player.displayNext = false

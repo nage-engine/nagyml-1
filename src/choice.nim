@@ -29,6 +29,7 @@ type
     jump* {.defaultVal: none(Path).}: Option[Path]
     display* {.defaultVal: true.}: bool
     notes* {.defaultVal: none(Notes).}: Option[Notes]
+    variables* {.defaultVal: none(Table[string, string]).}: Option[Table[string, string]]
     ending* {.defaultVal: none(string).}: Option[string]
 
 func isInput*(choices: seq[Choice]): bool =
@@ -55,7 +56,11 @@ func display*(choices: seq[Choice], variables: Option[Table[string, string]]): t
     if index + 1 != strings.len:
       result.text.get.add("\n")
 
-proc applyVariable*(choice: Choice, variables: var Option[Table[string, string]], line: string) =
+proc applyVariables*(choice: Choice, variables: var Option[Table[string, string]], line: Option[string]) =
   if variables.isNone:
     variables = some(initTable[string, string]())
-  variables.get[choice.input.get.variable] = line
+  if line.isSome:
+    variables.get[choice.input.get.variable] = line.get
+  if choice.variables.isSome:
+    for key, value in choice.variables.get:
+      variables.get[key] = value
