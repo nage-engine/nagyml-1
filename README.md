@@ -18,7 +18,7 @@ A game's entrypoint is `nage.yml` in the working directory. It uses a metadata f
 - `background`: An optional introductory text that the game will display on first launch
 - `entry`: a `Path` object that controls the initial prompt container. A path has a `prompt` field and an optional (but required here) `file` field, but we'll talk more about that later.
 - `notes`: Optional list of notes to apply on startup; covered later
-- `variables`: Optional map of variables to apply on startup; again covered later
+- `variables`: Optional tables of variables to apply on startup; again covered later
 - `save`: Whether to automatically save the game on quit. This is always overriden by the `.quit` command. `true` by default
 - `debug`: Whether to enable debug commands; defaults to `false`, leave it as that in the finished product
 
@@ -63,7 +63,7 @@ And Choices are much more complex, with the following fields:
   - The prompt validator will catch any mistakes you make, so don't worry about getting it right on the first try
 - `display`: Whether to display the next prompt's intro text
 - `notes`: A `Notes` object, controlling whether this prompt should be displayed and how it affects the player's state; covered in the [Notes](#Notes) section
-- `variables`: A table of to apply to the player's variables; covered in the [Variables](#Variables) section
+- `variables`: A table to merge with the player's variables; covered in the [Variables](#Variables) section
 - `input`: An `Input` object, controlling optional user input for variables
 - `ending`: All games have to end somewhere! If this field is present, its content will be displayed to the player, and then the game will end (after saving).
 
