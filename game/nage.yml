@@ -8,6 +8,9 @@ entry:
 save: false
 debug: true
 
+history:
+  size: 15
+
 background: |-
   As you rest your eyes for what you hope is the final time, you wonder... could it have been different?
   You've seen everything, done everything there is to do in this harsh world, and you're a survivor.

@@ -81,18 +81,21 @@ proc tryApplyNote(note: string, player: var Player) =
   if not player.notes.contains(note):
     player.notes.add(note)
 
+proc applyNotes*(notes: seq[NoteApplication], player: var Player, reverse: bool = false) =
+  for note in notes:
+    if note.take xor reverse:
+      let index = player.notes.find(note.name)
+      if index != -1:
+        player.notes.delete(index)
+    else:
+      note.name.tryApplyNote(player)
+
 proc applyNotes*(choice: Choice, player: var Player) =
-  if not choice.notes.isNone:
-    if not choice.notes.get.once.isNone:
+  if choice.notes.isSome:
+    if choice.notes.get.once.isSome:
       choice.notes.get.once.get.tryApplyNote(player)
-    if not choice.notes.get.apply.isNone:
-      for note in choice.notes.get.apply.get:
-        if note.take:
-          let index = player.notes.find(note.name)
-          if index != -1:
-            player.notes.delete(index)
-        else:
-          note.name.tryApplyNote(player)
+    if choice.notes.get.apply.isSome:
+      choice.notes.get.apply.get.applyNotes(player)
 
 proc appendHistory*(choice: Choice, line: Option[string], size: Option[int], player: var Player) =
   let last = player.history[^1]
@@ -100,6 +103,9 @@ proc appendHistory*(choice: Choice, line: Option[string], size: Option[int], pla
     file: some(choice.jump.get.file.get(last.path.file.get)), 
     prompt: choice.jump.get.prompt
   )
+  var notes = choice.notes.map(n => n.apply.get(@[])).get(@[])
+  if choice.notes.isSome and choice.notes.get.once.isSome:
+    notes.add(NoteApplication(name: choice.notes.get.once.get))
   var variables = choice.variables.get(initTable[string, string]())
   if line.isSome:
     variables[choice.input.get.variable] = line.get
@@ -114,12 +120,24 @@ proc appendHistory*(choice: Choice, line: Option[string], size: Option[int], pla
     display: choice.display, 
     path: newPath,
     locked: choice.lock,
-    notes: if choice.notes.isSome: choice.notes.get.apply else: none(seq[NoteApplication]),
+    notes: if notes.len > 0: some(notes) else: none(seq[NoteApplication]),
     variables: if variableEntries.len > 0: some(variableEntries) else: none(Table[string, VariableEntry])
   )
   player.history.add(entry)
   if size.isSome and player.history.len > size.get:
     player.history.delete(0)
+
+proc reverseHistory*(player: var Player) =
+  let entry = player.history[^1]
+  if entry.notes.isSome:
+    entry.notes.get.applyNotes(player, true)
+  if entry.variables.isSome:
+    for name, variable in entry.variables.get:
+      if variable.previous.isSome:
+        player.variables.get[name] = variable.previous.get
+      else:
+        player.variables.get.del(name)
+  player.history.delete(player.history.len - 1)
 
 proc save*(player: Player, display: bool) =
   if display:

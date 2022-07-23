@@ -49,8 +49,8 @@ proc loadGame*(): Result[Game, string] =
         return err(fmt"Error while validating prompt '{file}/{name}', choice #{res.error.choice + 1}: {res.error.reason}")
   # Load other files
   let metadata = ?loadObject[Metadata](GAME_DATA)
-  if metadata.history.size.isSome and metadata.history.size.get < 2:
-    return err("Error while validating metadata (nage.yml): history size must be at least 2")
+  if metadata.history.size.isSome and metadata.history.size.get < 1:
+    return err("Error while validating metadata (nage.yml): history size must be at least 1")
   let player = ?loadPlayer(metadata)
   result = ok(Game(metadata: metadata, player: player, prompts: prompts))
 
@@ -77,19 +77,19 @@ proc displayTableKeys[T](table: Table[string, T], id: string): string =
   result = fmt"{keys.len} {id}(s):"
   result.add("\n" & keys.join(", "))
 
-proc handleCommand(game: Game, command: string, history: var seq[HistoryEntry]): Result[bool, string] =
+proc handleCommand(game: Game, command: string): Result[bool, string] =
   let args = command.split(" ")[0..^1]
   if args[0] in DEBUG_COMMANDS and not game.metadata.debug:
     return err("Invalid command: debug features are disabled")
   if args[0] in TABLE_COMMANDS:
     ?game.prompts.checkTableEntry(args, 1, "file")
-  var skip = false
+  var back = false
   case args[0]:
     of ".help": echo "\n" & (if game.metadata.debug: COMMAND_HELP_DEBUG else: COMMAND_HELP)
     of ".back":
-      if game.metadata.history.locked or game.player.history[^1].locked:
+      if game.metadata.history.locked or game.player.history[^1].locked or game.player.history.len == 1:
         return err("You can't go back right now!")
-      skip = true
+      back = true
     of ".save": game.player.save(true)
     of ".quit": game.shutdown()
     of ".prompt":
@@ -101,12 +101,12 @@ proc handleCommand(game: Game, command: string, history: var seq[HistoryEntry]):
       echo "\n" & game.prompts.displayTableKeys("file")
     of ".notes": echo (if game.player.notes.len == 0: "No notes applied" else: game.player.notes.join(", "))
     of ".variables":
-      if game.player.variables.isNone:
+      if game.player.variables.isNone or game.player.variables.get.len == 0:
         return err("No variables applied")
       echo "\n" & game.player.variables.get.pairs().toSeq.map(p => fmt"{p[0]}: {p[1]}").join("\n")
     else: return err("Invalid command; use '.help' for a list of commands")
   echo ""
-  return ok(skip)
+  return ok(back)
 
 proc takeInput(game: Game, noise: var Noise): string =
   let ok = noise.readLine()
@@ -115,9 +115,9 @@ proc takeInput(game: Game, noise: var Noise): string =
     game.shutdown(game.metadata.save)
   result = noise.getLine
 
-proc validateInput(game: Game, line: string, isInt: bool, history: var seq[HistoryEntry]): tuple[valid: bool, skip: bool] =
+proc validateInput(game: Game, line: string, isInt: bool): tuple[valid: bool, back: bool] =
   if line.startsWith("."):
-    let handled = game.handleCommand(line, history)
+    let handled = game.handleCommand(line)
     if handled.isErr:
       echo handled.error & "\n"
     return (false, if handled.isOk: handled.get else: false)
@@ -134,15 +134,15 @@ proc validateInput(game: Game, line: string, isInt: bool, history: var seq[Histo
     return (false, false)
   return (true, false)
 
-proc beginPrompt(game: Game, prompt: Prompt, choices: seq[Choice], noise: var Noise, history: var seq[HistoryEntry]): tuple[choice: Option[Choice], line: Option[string], skip: bool] =
+proc beginPrompt(game: Game, prompt: Prompt, choices: seq[Choice], noise: var Noise): tuple[choice: Option[Choice], line: Option[string], back: bool] =
   # Controls the user input loop, even if it's not to pick a choice
   let display = choices.display(game.player.variables)
   if display.text.isSome:
     echo display.text.get & "\n"
   while true:
     let line = game.takeInput(noise)
-    let (valid, skip) = game.validateInput(line, not display.input, history)
-    if skip:
+    let (valid, back) = game.validateInput(line, not display.input)
+    if back:
       return (none(Choice), none(string), true)
     if valid:
       if display.input:
@@ -157,7 +157,7 @@ proc beginPrompt(game: Game, prompt: Prompt, choices: seq[Choice], noise: var No
         echo ""
         return (some(choices[index - 1]), none(string), false)
 
-proc selectChoice(game: Game, display: var bool, noise: var Noise, history: var seq[HistoryEntry]): tuple[choice: Option[Choice], line: Option[string], skip: bool] =
+proc selectChoice(game: Game, display: var bool, noise: var Noise, history: var seq[HistoryEntry]): tuple[choice: Option[Choice], line: Option[string], back: bool] =
   let prompt = game.getNextPrompt()
   if display:
     if prompt.prompt.isSome:
@@ -172,7 +172,7 @@ proc selectChoice(game: Game, display: var bool, noise: var Noise, history: var 
   if choices.len == 0:
     echo "You've run out of options! This shouldn't happen - report this to the game's author(s)!"
     game.shutdown(game.metadata.save)
-  return game.beginPrompt(prompt, choices, noise, history)
+  return game.beginPrompt(prompt, choices, noise)
 
 proc begin*(game: var Game, noise: var Noise) =
   if not game.player.began:
@@ -181,9 +181,10 @@ proc begin*(game: var Game, noise: var Noise) =
   # Main game loop
   while true:
     # Select a choice from the current prompt
-    let (choiceOpt, line, skip) = game.selectChoice(game.player.history[^1].display, noise, game.player.history)
-    # If skipping, just continue the loop; choice is guaranteed to be Some otherwise
-    if skip:
+    let (choiceOpt, line, back) = game.selectChoice(game.player.history[^1].display, noise, game.player.history)
+    # If going back, reverse history and continue; choice is guaranteed to be Some otherwise
+    if back:
+      game.player.reverseHistory()
       continue
     let choice = choiceOpt.get
     # If it's an ending, stop the game here
