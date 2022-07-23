@@ -115,35 +115,43 @@ proc takeInput(game: Game, noise: var Noise): string =
     game.shutdown(game.metadata.save)
   result = noise.getLine
 
-proc validateInput(game: Game, line: string, isInt: bool): tuple[valid: bool, back: bool] =
+proc validateInput(game: Game, line: string, isInt: bool): Result[tuple[valid: bool, back: bool], string] =
   if line.startsWith("."):
-    let handled = game.handleCommand(line)
-    if handled.isErr:
-      echo handled.error & "\n"
-    return (false, if handled.isOk: handled.get else: false)
+    let back = ?game.handleCommand(line)
+    return ok((false, back))
   if not isInt:
     if line.isEmptyOrWhitespace:
-      echo "Invalid input: cannot be blank\n"
-      return (false, false)
-    return (true, false)
+      return err("Invalid input: cannot be blank")
+    return ok((true, false))
   var index: int
   try:
     index = parseInt(line)
   except:
-    echo "Invalid input: must be a number\n"
-    return (false, false)
-  return (true, false)
+    return err("Invalid input: must be a number")
+  return ok((true, false))
 
 proc beginPrompt(game: Game, prompt: Prompt, choices: seq[Choice], noise: var Noise): tuple[choice: Option[Choice], line: Option[string], back: bool] =
-  # Controls the user input loop, even if it's not to pick a choice
+  ## Controls the user input loop, even if it's not to pick a choice
   let display = choices.display(game.player.variables)
   if display.text.isSome:
     echo display.text.get & "\n"
+  # Main input loop
   while true:
+    # Take and validate input, try again if invalid
     let line = game.takeInput(noise)
-    let (valid, back) = game.validateInput(line, not display.input)
+    let validated = game.validateInput(line, not display.input)
+    if validated.isErr:
+      echo validated.error() & "\n"
+      continue
+    let (valid, back) = validated.get
+    # If invalid (command), add to history
+    if not valid:
+      when promptHistory:
+        noise.historyAdd(line)
+    # If going back, exit early
     if back:
       return (none(Choice), none(string), true)
+    # If valid, go through with choice or input
     if valid:
       if display.input:
         let choice = choices[0]
