@@ -17,7 +17,7 @@ type
   HistoryEntry* = object
     display*: bool
     path*: Path
-    locked*: bool
+    locked*: Option[bool]
     notes*: Option[seq[NoteApplication]]
     variables*: Option[Table[string, VariableEntry]]
 
@@ -33,7 +33,7 @@ proc loadPlayer*(metadata: Metadata): Result[Player, string] =
     let entry = HistoryEntry(
       display: true,
       path: metadata.entry,
-      locked: false,
+      locked: none(bool),
       notes: none(seq[NoteApplication]),
       variables: none(Table[string, VariableEntry])
     )

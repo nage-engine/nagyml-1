@@ -87,9 +87,12 @@ proc handleCommand(game: Game, command: string): Result[bool, string] =
   case args[0]:
     of ".help": echo "\n" & (if game.metadata.debug: COMMAND_HELP_DEBUG else: COMMAND_HELP)
     of ".back":
-      if game.metadata.history.locked or game.player.history[^1].locked or game.player.history.len == 1:
-        return err("You can't go back right now!")
-      back = true
+      let entry = game.player.history[^1]
+      back = if game.player.history.len == 1: false
+        elif entry.locked.isSome: not entry.locked.get
+        else: not game.metadata.history.locked
+      if not back:
+        return err("You can't go back right now.")
     of ".save": game.player.save(true)
     of ".quit": game.shutdown()
     of ".prompt":
