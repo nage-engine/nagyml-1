@@ -25,6 +25,7 @@ type
 
   Choice* = object
     response* {.defaultVal: none(Text).}: Option[Text]
+    tag* {.defaultVal: none(string).}: Option[string]
     input* {.defaultVal: none(Input).}: Option[Input]
     jump* {.defaultVal: none(Path).}: Option[Path]
     display* {.defaultVal: true.}: bool
@@ -45,12 +46,17 @@ func getJumps*(choices: seq[Choice], file: string, prompt: string, external: boo
       if choice.jump.get.matches(file, prompt, external):
         result.add(index)
 
+proc displayResponse*(choice: Choice, variables: Option[Table[string, string]]): string =
+  if choice.tag.isSome:
+    result.add(fmt"[{choice.tag.get}] ")
+  result.add(choice.response.get.display(variables))
+
 func display*(choices: seq[Choice], variables: Option[Table[string, string]]): tuple[input: bool, text: Option[string]] =
   if choices.isInput:
     return (true, choices[0].input.get.text.map(s => s.parse(variables) & ":"))
   let strings = choices
     .filter(c => c.response.isSome)
-    .map(c => c.response.get.display(variables))
+    .map(c => c.displayResponse(variables))
   result.text = some("")
   for index, choice in strings:
     result.text.get.add(fmt"{index + 1}) {choice}")
