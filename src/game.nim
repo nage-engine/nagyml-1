@@ -29,7 +29,7 @@ const DEBUG_COMMANDS: seq[string] = @[".prompt", ".prompts", ".files", ".notes",
 const TABLE_COMMANDS: seq[string] = @[".prompt", ".prompts"]
 
 type Game = object
-  metadata: Metadata
+  metadata*: Metadata
   player: Player
   prompts: Table[string, Table[string, Prompt]]
 
@@ -54,6 +54,32 @@ proc loadGame*(): Result[Game, string] =
   let player = ?loadPlayer(metadata)
   result = ok(Game(metadata: metadata, player: player, prompts: prompts))
 
+func getDelayData(c: char, base: int): tuple[delay: int, newline: bool] =
+  result = case c:
+    of '\n':
+      (base * 5, true)
+    of '.', '!', '?':
+      (base * 3, false)
+    else:
+      (base, false)
+
+proc echoDelayed(game: Game, text: string) =
+  if game.metadata.delay == 0:
+    echo text & "\n"
+    return
+  var lastNewline = false
+  for c in text:
+    stdout.write(c)
+    stdout.flushFile()
+    let delayData = c.getDelayData(game.metadata.delay)
+    if delayData.newline:
+      if lastNewline:
+        continue
+    lastNewline = delayData.newline
+    os.sleep(delayData.delay)
+  os.sleep(game.metadata.delay * 10)
+  echo "\n"
+
 proc shutdown*(game: Game, save: bool = true, display: bool = true) =
   if save:
     game.player.save(display)
@@ -61,11 +87,11 @@ proc shutdown*(game: Game, save: bool = true, display: bool = true) =
     echo "Exiting..."
   quit(0)
 
-proc getNextPrompt(game: Game): Prompt =
+func getNextPrompt(game: Game): Prompt =
   let path = game.player.history[^1].path
   result = game.prompts.getOrDefault(path.file.get).getOrDefault(path.prompt)
 
-proc checkTableEntry[T](table: Table[string, T], args: seq[string], index: int, id: string): Result[void, string] =
+func checkTableEntry[T](table: Table[string, T], args: seq[string], index: int, id: string): Result[void, string] =
   if args.len < index + 1:
     return err(fmt"Command error: missing {id} name")
   if not table.contains(args[index]):
@@ -172,7 +198,8 @@ proc selectChoice(game: Game, display: var bool, noise: var Noise, history: var 
   let prompt = game.getNextPrompt()
   if display:
     if prompt.prompt.isSome:
-      echo prompt.prompt.get.display(game.player.variables) & "\n"
+      let promptText = prompt.prompt.get.display(game.player.variables)
+      game.echoDelayed(promptText)
   else:
     display = true
   # If the only choice has no text or variable input, user input will be skipped (redirect prompt)
@@ -187,7 +214,7 @@ proc selectChoice(game: Game, display: var bool, noise: var Noise, history: var 
 
 proc begin*(game: var Game, noise: var Noise) =
   if not game.player.began:
-    echo game.metadata.display()
+    game.echoDelayed(game.metadata.display())
     game.player.began = true
   # Main game loop
   while true:
@@ -200,7 +227,7 @@ proc begin*(game: var Game, noise: var Noise) =
     let choice = choiceOpt.get
     # If it's an ending, stop the game here
     if choice.ending.isSome:
-      echo choice.ending.get.parse(game.player.variables)
+      game.echoDelayed(choice.ending.get.parse(game.player.variables))
       game.shutdown(display=false)
     # Append to history and apply any data
     choice.appendHistory(line, game.metadata.history.size, game.player)

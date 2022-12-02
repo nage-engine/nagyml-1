@@ -33,7 +33,7 @@ proc display*(lines: seq[Text], variables: Option[Table[string, string]]): strin
   var dlg = none(bool)
   for index, line in lines:
     if dlg.isSome:
-      if dlg.get and line.mode != dialogue:
+      if dlg.get != (line.mode == dialogue):
         result.add("\n")
     result.add(line.display(variables))
     if index + 1 != lines.len:

@@ -19,9 +19,10 @@ type
     save* {.defaultVal: true.}: bool
     debug* {.defaultVal: false.}: bool
     history* {.defaultVal: HistoryConfig(locked: false, size: some(5)).}: HistoryConfig
+    delay* {.defaultVal: 30.}: int
 
-proc display*(metadata: Metadata): string =
+func display*(metadata: Metadata): string =
   let authors = metadata.authors.join(", ")
-  echo fmt"{metadata.name} {metadata.version} by {authors}"
+  result.add(fmt("{metadata.name} {metadata.version} by {authors}"))
   if metadata.background.isSome:
-    echo "\n" & metadata.background.get
+    result.add("\n\n" & metadata.background.get)
