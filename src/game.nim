@@ -34,13 +34,18 @@ type Game = object
   prompts: Table[string, Table[string, Prompt]]
 
 proc loadGame*(): Result[Game, string] =
-  var prompts = initTable[string, Table[string, Prompt]]()
+  # Load metadata
+  let metadata = ?loadObject[Metadata](GAME_DATA)
+  if metadata.history.size.isSome and metadata.history.size.get < 1:
+    return err("Error while validating metadata (nage.yml): history size must be at least 1")
   # Load all prompts
+  var prompts = initTable[string, Table[string, Prompt]]()
   for file in walkDirRec(PROMPTS_DIR):
     let p = splitFile(file)
-    if prompts.contains(p.name):
-      return err(fmt"Error while loading prompt files: duplicate name '{p.name}'. Make sure each file name is unique regardless of subdirectory")
-    prompts[p.name] = ?loadObject[Table[string, Prompt]](file)
+    let name = if not metadata.localize and p.dir.contains("prompts/"): p.dir.split("prompts/")[1] & "/" & p.name else: p.name 
+    if prompts.contains(name):
+      return err(fmt"Error while loading prompt files: duplicate name '{name}'. Make sure each file name is unique regardless of subdirectory. Enable true filepaths by setting localize: false in nage.yml")
+    prompts[name] = ?loadObject[Table[string, Prompt]](file)
   # Validate all prompts against the whole table
   for file, filePrompts in prompts:
     for name, prompt in filePrompts:
@@ -48,9 +53,6 @@ proc loadGame*(): Result[Game, string] =
       if res.isErr:
         return err(fmt"Error while validating prompt '{file}/{name}', choice #{res.error.choice + 1}: {res.error.reason}")
   # Load other files
-  let metadata = ?loadObject[Metadata](GAME_DATA)
-  if metadata.history.size.isSome and metadata.history.size.get < 1:
-    return err("Error while validating metadata (nage.yml): history size must be at least 1")
   let player = ?loadPlayer(metadata)
   result = ok(Game(metadata: metadata, player: player, prompts: prompts))
 
