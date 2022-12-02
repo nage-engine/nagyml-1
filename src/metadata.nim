@@ -20,7 +20,6 @@ type
     debug* {.defaultVal: false.}: bool
     history* {.defaultVal: HistoryConfig(locked: false, size: some(5)).}: HistoryConfig
     delay* {.defaultVal: 30.}: int
-    localize* {.defaultVal: true.}: bool
 
 func display*(metadata: Metadata): string =
   let authors = metadata.authors.join(", ")
