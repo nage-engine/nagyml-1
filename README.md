@@ -1,3 +1,7 @@
+# [nage `2.x` is written in Rust](https://github.com/acikek/nage-2)
+
+It's not you, Nim... it's me. My code wasn't great and I wanted to rewrite it in something I was more familiar with. However, your spirit lives on in the **n** in **nage**!
+
 # nage
 
 **N**ot **A**nother **G**ame **E**ngine
